@@ -38,85 +38,297 @@ const EditorButton: React.FC<{ children: React.ReactNode, active?: boolean, onCl
     );
 };
 
-// Updated to Fanqie/Platform Style Curve
-const ReaderInterestCurve = () => (
-    <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm mt-6 mb-6">
-        <div className="flex justify-between items-center mb-4">
-             <h3 className="font-bold text-gray-800 flex items-center text-sm">
-                <span className="mr-2 text-lg">📉</span> 读者留存与情绪监控
-            </h3>
-            <div className="flex space-x-3 text-xs">
-                <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-orange-400 mr-1"></span>情绪值</span>
-                <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-gray-300 mr-1"></span>留存基准</span>
-            </div>
-        </div>
-       
-        <div className="relative h-48 w-full">
-             <svg viewBox="0 0 400 150" className="w-full h-full overflow-visible">
-                {/* Grid lines */}
-                <line x1="0" y1="150" x2="400" y2="150" stroke="#f3f4f6" strokeWidth="1" />
-                <line x1="0" y1="0" x2="0" y2="150" stroke="#f3f4f6" strokeWidth="1" />
-                <text x="5" y="10" fontSize="10" fill="#9ca3af">100%</text>
-                <text x="5" y="145" fontSize="10" fill="#9ca3af">0%</text>
-                
-                {/* Retention Benchmark Line (Gray dashed) */}
-                <path d="M0,50 Q200,60 400,80" fill="none" stroke="#e5e7eb" strokeWidth="2" strokeDasharray="4 4" />
+// Updated to Fanqie/Platform Style Curve with Attribution Analysis
+interface ReaderInterestCurveProps {
+    platformData?: {
+        hasData: boolean;
+        clickRate?: number;
+        retentionRate?: number;
+        readerFeedback: string[];
+    };
+}
 
-                {/* The Curve */}
-                <path 
-                    d="M0,120 C40,120 60,130 100,130 C140,130 160,80 200,60 C240,40 280,100 320,30 C360,-20 400,50 400,50" 
-                    fill="none" 
-                    stroke="#f4a261" 
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                />
-                
-                {/* Area under curve */}
-                <path 
-                     d="M0,120 C40,120 60,130 100,130 C140,130 160,80 200,60 C240,40 280,100 320,30 C360,-20 400,50 400,50 L400,150 L0,150 Z"
-                     fill="url(#gradient)"
-                     opacity="0.2"
-                />
-                <defs>
-                    <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#f4a261" />
-                        <stop offset="100%" stopColor="#fff" />
-                    </linearGradient>
-                </defs>
-                
-                {/* Points of Interest - Platform Specific Pain Points */}
-                {/* Drop off point */}
-                <circle cx="100" cy="130" r="4" fill="#ef4444" stroke="white" strokeWidth="2" />
-                <line x1="100" y1="130" x2="100" y2="90" stroke="#ef4444" strokeWidth="1" strokeDasharray="2 2" />
-                <g transform="translate(100, 85)">
-                    <rect x="-40" y="-12" width="80" height="16" rx="4" fill="#fee2e2" />
-                    <text textAnchor="middle" y="0" fontSize="9" fill="#b91c1c" fontWeight="bold">⚠ 跳出点: 黄金三秒未达标</text>
-                </g>
-                
-                {/* Cool point */}
-                <circle cx="320" cy="30" r="4" fill="#10b981" stroke="white" strokeWidth="2" />
-                <g transform="translate(320, 15)">
-                     <rect x="-30" y="-12" width="60" height="16" rx="4" fill="#d1fae5" />
-                    <text textAnchor="middle" y="0" fontSize="9" fill="#047857" fontWeight="bold">★ 完读率提升点</text>
-                </g>
-             </svg>
-        </div>
-        <div className="grid grid-cols-2 gap-4 mt-2">
-            <div className="bg-red-50 p-2 rounded text-xs text-red-700">
-                <span className="font-bold">平台痛点诊断:</span> 开篇前300字留存率预估低于平均值15%，建议加强冲突。
-            </div>
-            <div className="bg-green-50 p-2 rounded text-xs text-green-700">
-                <span className="font-bold">吸睛指数:</span> 85/100。结尾悬念设置符合“番茄”追读算法逻辑。
-            </div>
-        </div>
-    </div>
-);
+const ReaderInterestCurve: React.FC<ReaderInterestCurveProps> = ({ platformData }) => {
+    // 归因分析点
+    const attributionPoints = [
+        {
+            position: 25,
+            type: 'dropout' as const,
+            plotDescription: '开篇第一段"周屿接过书"与后文重复',
+            reason: '读者误以为排版错误，造成阅读困惑',
+            x: 100,
+            y: 130
+        },
+        {
+            position: 75,
+            type: 'attract' as const,
+            plotDescription: '周屿"靠窗发呆"的神秘感铺垫',
+            reason: '读者对男主身份产生好奇心',
+            x: 280,
+            y: 50
+        },
+        {
+            position: 95,
+            type: 'dropout' as const,
+            plotDescription: '结尾"下次告诉你读后感"缺乏钩子',
+            reason: '对话过于平淡，无法制造追读悬念',
+            x: 380,
+            y: 60
+        }
+    ];
 
-// Diagnostic Report Card Component - 去AI味优化版
-const DiagnosticReportCard = () => {
+    return (
+        <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm mt-6 mb-6">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-gray-800 flex items-center text-sm">
+                    <span className="mr-2 text-lg">📉</span> 读者留存与情绪监控
+                </h3>
+                <div className="flex space-x-3 text-xs">
+                    <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-orange-400 mr-1"></span>情绪值</span>
+                    <span className="flex items-center"><span className="w-2 h-2 rounded-full bg-gray-300 mr-1"></span>留存基准</span>
+                </div>
+            </div>
+
+            <div className="relative h-48 w-full">
+                <svg viewBox="0 0 400 150" className="w-full h-full overflow-visible">
+                    {/* Grid lines */}
+                    <line x1="0" y1="150" x2="400" y2="150" stroke="#f3f4f6" strokeWidth="1" />
+                    <line x1="0" y1="0" x2="0" y2="150" stroke="#f3f4f6" strokeWidth="1" />
+                    <text x="5" y="10" fontSize="10" fill="#9ca3af">100%</text>
+                    <text x="5" y="145" fontSize="10" fill="#9ca3af">0%</text>
+
+                    {/* Retention Benchmark Line */}
+                    <path d="M0,50 Q200,60 400,80" fill="none" stroke="#e5e7eb" strokeWidth="2" strokeDasharray="4 4" />
+
+                    {/* The Curve */}
+                    <path
+                        d="M0,120 C40,120 60,130 100,130 C140,130 160,80 200,60 C240,40 280,100 320,30 C360,-20 400,50 400,50"
+                        fill="none"
+                        stroke="#f4a261"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                    />
+
+                    {/* Area under curve */}
+                    <path
+                        d="M0,120 C40,120 60,130 100,130 C140,130 160,80 200,60 C240,40 280,100 320,30 C360,-20 400,50 400,50 L400,150 L0,150 Z"
+                        fill="url(#gradient)"
+                        opacity="0.2"
+                    />
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#f4a261" />
+                            <stop offset="100%" stopColor="#fff" />
+                        </linearGradient>
+                    </defs>
+
+                    {/* Drop off point */}
+                    <circle cx="100" cy="130" r="4" fill="#ef4444" stroke="white" strokeWidth="2" />
+                    <line x1="100" y1="130" x2="100" y2="90" stroke="#ef4444" strokeWidth="1" strokeDasharray="2 2" />
+                    <g transform="translate(100, 85)">
+                        <rect x="-40" y="-12" width="80" height="16" rx="4" fill="#fee2e2" />
+                        <text textAnchor="middle" y="0" fontSize="9" fill="#b91c1c" fontWeight="bold">⚠ 跳出点: 黄金三秒未达标</text>
+                    </g>
+
+                    {/* Cool point */}
+                    <circle cx="320" cy="30" r="4" fill="#10b981" stroke="white" strokeWidth="2" />
+                    <g transform="translate(320, 15)">
+                        <rect x="-30" y="-12" width="60" height="16" rx="4" fill="#d1fae5" />
+                        <text textAnchor="middle" y="0" fontSize="9" fill="#047857" fontWeight="bold">★ 完读率提升点</text>
+                    </g>
+                </svg>
+            </div>
+
+            {/* 归因分析区块 - 新增 */}
+            <div className="mt-4 border-t border-gray-100 pt-4">
+                <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center">
+                    <span className="mr-2">🔍</span> 归因分析（具体情节定位）
+                </h4>
+                <div className="space-y-2">
+                    {attributionPoints.map((point, index) => (
+                        <div
+                            key={index}
+                            className={`p-3 rounded-lg border ${
+                                point.type === 'dropout'
+                                    ? 'bg-red-50 border-red-100'
+                                    : 'bg-green-50 border-green-100'
+                            }`}
+                        >
+                            <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                    <div className="flex items-center mb-1">
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded mr-2 ${
+                                            point.type === 'dropout'
+                                                ? 'bg-red-200 text-red-700'
+                                                : 'bg-green-200 text-green-700'
+                                        }`}>
+                                            {point.type === 'dropout' ? '❌ 劝退点' : '✅ 吸引点'}
+                                        </span>
+                                        <span className="text-xs text-gray-500">位置: 约{point.position}%</span>
+                                    </div>
+                                    <p className="text-sm text-gray-800 font-medium">"{point.plotDescription}"</p>
+                                    <p className="text-xs text-gray-600 mt-1">
+                                        <span className="font-medium">原因：</span>{point.reason}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 平台数据联动 - 新增 */}
+            {platformData?.hasData && (
+                <div className="mt-4 bg-purple-50 rounded-lg p-3 border border-purple-100">
+                    <h4 className="text-sm font-bold text-purple-800 mb-2 flex items-center">
+                        <span className="mr-2">📊</span> 平台数据联动分析
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                        {platformData.clickRate && (
+                            <div className="bg-white p-2 rounded text-center">
+                                <span className="text-2xl font-bold text-purple-600">{platformData.clickRate}%</span>
+                                <span className="block text-xs text-gray-500">点击率</span>
+                            </div>
+                        )}
+                        {platformData.retentionRate && (
+                            <div className="bg-white p-2 rounded text-center">
+                                <span className="text-2xl font-bold text-purple-600">{platformData.retentionRate}%</span>
+                                <span className="block text-xs text-gray-500">留存率</span>
+                            </div>
+                        )}
+                    </div>
+                    {platformData.readerFeedback.length > 0 && (
+                        <div>
+                            <span className="text-xs font-bold text-purple-700">评论区读者反馈：</span>
+                            <ul className="mt-1 space-y-1">
+                                {platformData.readerFeedback.map((feedback, i) => (
+                                    <li key={i} className="text-xs text-gray-600 flex items-start">
+                                        <span className="text-purple-400 mr-1">•</span>
+                                        {feedback}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* 读者期待分析 - 新增 */}
+            <div className="mt-4 bg-blue-50 rounded-lg p-3 border border-blue-100">
+                <h4 className="text-sm font-bold text-blue-800 mb-2 flex items-center">
+                    <span className="mr-2">💡</span> 读者期待 vs 本章内容
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white p-2 rounded">
+                        <span className="text-xs font-bold text-blue-600 block mb-1">读者想看：</span>
+                        <ul className="text-xs text-gray-600 space-y-0.5">
+                            <li>• 男主身份揭秘</li>
+                            <li>• 两人关系推进</li>
+                            <li>• 悬念或冲突</li>
+                        </ul>
+                    </div>
+                    <div className="bg-white p-2 rounded">
+                        <span className="text-xs font-bold text-orange-600 block mb-1">本章提供：</span>
+                        <ul className="text-xs text-gray-600 space-y-0.5">
+                            <li>• ✅ 日常互动描写</li>
+                            <li>• ⚠️ 关系推进较慢</li>
+                            <li>• ❌ 缺乏悬念钩子</li>
+                        </ul>
+                    </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between bg-white p-2 rounded">
+                    <span className="text-xs text-gray-600">本章满足读者期待程度</span>
+                    <div className="flex items-center">
+                        <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden mr-2">
+                            <div className="w-3/5 h-full bg-orange-400"></div>
+                        </div>
+                        <span className="text-sm font-bold text-orange-500">60%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="bg-red-50 p-2 rounded text-xs text-red-700">
+                    <span className="font-bold">平台痛点诊断:</span> 开篇前300字留存率预估低于平均值15%，建议加强冲突。
+                </div>
+                <div className="bg-green-50 p-2 rounded text-xs text-green-700">
+                    <span className="font-bold">吸睛指数:</span> 85/100。结尾悬念设置符合"番茄"追读算法逻辑。
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Diagnostic Report Card Component - 重构版：增加核心梗编辑和偏差检测
+interface DiagnosticReportCardProps {
+    bookSettings: {
+        tags: string[];
+        channel: string;
+        corePlot: string;
+        corePlotConfirmed: boolean;
+    };
+    onUpdateCorePlot: (newPlot: string) => void;
+}
+
+const DiagnosticReportCard: React.FC<DiagnosticReportCardProps> = ({ bookSettings, onUpdateCorePlot }) => {
+    const [isEditingCorePlot, setIsEditingCorePlot] = useState(false);
+    const [tempCorePlot, setTempCorePlot] = useState(bookSettings.corePlot);
+
+    // 偏差检测模拟数据
+    const deviationAnalysis = {
+        score: 35,
+        reason: '本章侧重日常互动描写，与核心"悬疑"元素连接较弱',
+        chapterRole: 'transition' as const,
+        suggestions: [
+            '在结尾增加悬念线索，暗示男主身份',
+            '加入一个小冲突或反常细节',
+            '让女主对男主的规律行为产生疑问'
+        ]
+    };
+
+    const getChannelName = (channel: string) => {
+        const map: Record<string, string> = {
+            'fanqie': '番茄小说',
+            'qidian': '起点中文网',
+            'jinjiang': '晋江文学城',
+            'zhihu': '知乎盐选',
+            'qimao': '七猫小说'
+        };
+        return map[channel] || channel;
+    };
+
+    const getTagLabel = (tag: string) => {
+        const map: Record<string, string> = {
+            'xuanhuan': '玄幻', 'yanqing': '言情', 'xuanyi': '悬疑',
+            'dushi': '都市', 'lishi': '历史', 'kehuan': '科幻',
+            'xiuxian': '修仙', 'youxi': '游戏', 'danmei': '耽美', 'nvzun': '女尊'
+        };
+        return map[tag] || tag;
+    };
+
+    const getDeviationColor = (score: number) => {
+        if (score <= 30) return { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', bar: 'bg-green-500' };
+        if (score <= 60) return { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700', bar: 'bg-yellow-500' };
+        return { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', bar: 'bg-red-500' };
+    };
+
+    const deviationColors = getDeviationColor(deviationAnalysis.score);
+
+    const getRoleName = (role: string) => {
+        const map: Record<string, { name: string; desc: string; color: string }> = {
+            'rising': { name: '上升期', desc: '情绪逐步积累', color: 'text-green-600' },
+            'climax': { name: '高潮点', desc: '情绪爆发', color: 'text-red-600' },
+            'falling': { name: '舒缓期', desc: '情绪回落', color: 'text-blue-600' },
+            'transition': { name: '过渡章', desc: '承上启下', color: 'text-purple-600' }
+        };
+        return map[role] || { name: role, desc: '', color: 'text-gray-600' };
+    };
+
+    const chapterRole = getRoleName(deviationAnalysis.chapterRole);
+
     return (
         <div className="relative bg-[#fffdf5] border-2 border-[#f4e4bc] rounded-xl overflow-hidden shadow-sm mb-6 font-sans">
-            {/* Header / Badge */}
+            {/* Header */}
             <div className="bg-[#faecd8] p-4 flex justify-between items-center border-b border-[#f4e4bc]">
                 <div className="flex items-center space-x-2">
                     <div className="bg-white p-1.5 rounded-full border border-orange-200 shadow-sm">
@@ -139,82 +351,136 @@ const DiagnosticReportCard = () => {
                 </div>
             </div>
 
-            {/* Content Body */}
-            <div className="p-5 space-y-8">
-                {/* Intro - 去AI味 */}
-                <div className="bg-white p-4 rounded-lg border border-[#f4e4bc] text-sm text-gray-700 leading-relaxed shadow-sm relative">
-                    <span className="absolute -top-2 -left-2 text-2xl">📋</span>
-                    <span className="font-bold text-orange-600 ml-4">诊断摘要：</span>
-                    本章《书店来客》整体框架完整，文笔流畅。经分析发现：<span className="text-green-600 font-medium">文字细腻度较高</span>，但<span className="text-red-600 font-medium">开篇300字留存风险较大</span>，结尾悬念钩子不足。详见以下分析：
-                </div>
-
-                {/* Section 1: Positioning */}
-                <div>
-                    <h3 className="flex items-center text-base font-bold text-[#8c6b48] mb-4 uppercase tracking-wide border-b border-[#f4e4bc] pb-2">
-                        <span className="w-1 h-5 bg-orange-400 mr-2 rounded-full"></span>
-                        第一部分：核心卖点识别
+            <div className="p-5 space-y-6">
+                {/* 全书定位回显 - 新增 */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                    <h3 className="text-sm font-bold text-blue-800 mb-3 flex items-center">
+                        <span className="mr-2">📚</span> 全书定位识别
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Core Trope - 改为具体情节概括 */}
-                        <div className="bg-white p-4 rounded-xl border border-dashed border-orange-200">
-                            <h4 className="text-sm font-bold text-gray-800 mb-3 flex items-center">
-                                🧩 核心梗概提炼
-                            </h4>
-                            {/* 具体情节概括而非空洞标签 */}
-                            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-lg border border-blue-100 mb-3">
-                                <p className="text-sm text-gray-800 font-medium leading-relaxed">
-                                    "神秘常客固定时间造访书店，与店员产生微妙联系，身份成谜"
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap gap-2 mb-3">
-                                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">日常悬疑</span>
-                                <span className="bg-pink-100 text-pink-700 px-2 py-0.5 rounded text-xs">身份反差</span>
-                                <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">暗线推进</span>
-                            </div>
-                            <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                                <span className="font-bold">卖点分析：</span> 这类"熟悉的陌生人"设定在晋江/番茄有稳定受众，关键是要在前三章揭示身份线索制造追读欲。
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <span className="text-xs text-gray-500 block mb-1">目标平台</span>
+                            <span className="text-sm font-bold text-blue-700">{getChannelName(bookSettings.channel)}</span>
+                        </div>
+                        <div>
+                            <span className="text-xs text-gray-500 block mb-1">作��标签</span>
+                            <div className="flex flex-wrap gap-1">
+                                {bookSettings.tags.length > 0 ? (
+                                    bookSettings.tags.map(tag => (
+                                        <span key={tag} className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                            {getTagLabel(tag)}
+                                        </span>
+                                    ))
+                                ) : (
+                                    <span className="text-xs text-gray-400">未设置</span>
+                                )}
                             </div>
                         </div>
+                    </div>
 
-                        {/* Benchmark - 深度对比 */}
-                        <div className="bg-white p-4 rounded-xl border border-dashed border-orange-200">
-                            <h4 className="text-sm font-bold text-gray-800 mb-3 flex items-center">
-                                📚 对标作品分析
-                            </h4>
-                            <div className="space-y-3">
-                                {/* 对标书1 - 详细分析 */}
-                                <div className="bg-gray-50 p-2 rounded-lg">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className="text-xs font-bold text-gray-800">《他来了，请闭眼》</span>
-                                        <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">高度相似</span>
-                                    </div>
-                                    <p className="text-[11px] text-gray-600">相似点：神秘男主+日常场景+身份悬疑</p>
-                                    <p className="text-[11px] text-blue-600 font-medium">成功关键：开篇即抛出"犯罪侧写师"身份钩子</p>
-                                </div>
-                                {/* 对标书2 */}
-                                <div className="bg-gray-50 p-2 rounded-lg">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className="text-xs font-bold text-gray-800">《余生，请多指教》</span>
-                                        <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">部分相似</span>
-                                    </div>
-                                    <p className="text-[11px] text-gray-600">相似点：治愈系日常+细水长流</p>
-                                    <p className="text-[11px] text-blue-600 font-medium">成功关键：女主职业特殊性带来持续看点</p>
-                                </div>
-                            </div>
-                            <p className="text-[11px] text-orange-600 mt-2 font-medium">💡 建议：借鉴前者的悬念铺设节奏</p>
+                    {/* 章节节奏定位 */}
+                    <div className="mt-3 pt-3 border-t border-blue-100">
+                        <span className="text-xs text-gray-500 block mb-1">本章节奏定位</span>
+                        <div className="flex items-center">
+                            <span className={`text-sm font-bold ${chapterRole.color}`}>{chapterRole.name}</span>
+                            <span className="text-xs text-gray-500 ml-2">({chapterRole.desc})</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Section 2: Deep Audit */}
+                {/* 核心梗 + 偏差检测 - 关键新功能 */}
+                <div className={`rounded-xl p-4 border-2 ${deviationColors.border} ${deviationColors.bg}`}>
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-bold text-gray-800 flex items-center">
+                            <span className="mr-2">🎯</span> 核心梗偏差检测
+                        </h3>
+                        <button
+                            onClick={() => setIsEditingCorePlot(!isEditingCorePlot)}
+                            className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                        >
+                            <Edit className="w-3 h-3 mr-1" />
+                            {isEditingCorePlot ? '取消' : '编辑核心梗'}
+                        </button>
+                    </div>
+
+                    {/* 核心梗显示/编辑 */}
+                    {isEditingCorePlot ? (
+                        <div className="mb-4">
+                            <textarea
+                                value={tempCorePlot}
+                                onChange={(e) => setTempCorePlot(e.target.value)}
+                                className="w-full p-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 bg-white"
+                                rows={2}
+                                placeholder="输入全书核心梗..."
+                            />
+                            <button
+                                onClick={() => {
+                                    onUpdateCorePlot(tempCorePlot);
+                                    setIsEditingCorePlot(false);
+                                }}
+                                className="mt-2 bg-blue-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-600"
+                            >
+                                确认更新
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="bg-white p-3 rounded-lg border border-gray-200 mb-4">
+                            <span className="text-xs text-gray-500 block mb-1">当前核心梗：</span>
+                            <p className="text-sm text-gray-800 font-medium">
+                                {bookSettings.corePlot || '未设置核心梗'}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* 偏差度显示 */}
+                    <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700">本章偏离核心梗程度</span>
+                            <span className={`text-lg font-bold ${deviationColors.text}`}>
+                                {deviationAnalysis.score}%
+                            </span>
+                        </div>
+                        <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full ${deviationColors.bar} transition-all duration-500`}
+                                style={{ width: `${deviationAnalysis.score}%` }}
+                            />
+                        </div>
+                        <p className="text-xs text-gray-600 mt-2">
+                            <span className="font-medium">偏差原因：</span>{deviationAnalysis.reason}
+                        </p>
+                    </div>
+
+                    {/* 回归建议 */}
+                    <div className="bg-white/80 rounded-lg p-3">
+                        <span className="text-xs font-bold text-gray-700 block mb-2">📌 回归主线建议：</span>
+                        <ul className="space-y-1.5">
+                            {deviationAnalysis.suggestions.map((suggestion, i) => (
+                                <li key={i} className="text-xs text-gray-600 flex items-start">
+                                    <span className="text-orange-500 mr-2 font-bold">{i + 1}.</span>
+                                    {suggestion}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+
+                {/* 诊断摘要 */}
+                <div className="bg-white p-4 rounded-lg border border-[#f4e4bc] text-sm text-gray-700 leading-relaxed shadow-sm relative">
+                    <span className="absolute -top-2 -left-2 text-2xl">📋</span>
+                    <span className="font-bold text-orange-600 ml-4">诊断摘要：</span>
+                    本章《书店来客》整体框架完整，文笔流畅。经分析发现：<span className="text-green-600 font-medium">文字细腻度较高</span>，但<span className="text-red-600 font-medium">开篇300字留存风险较大</span>，结尾悬念钩子不足。
+                </div>
+
+                {/* 问题定位与修改建议 */}
                 <div>
                     <h3 className="flex items-center text-base font-bold text-[#8c6b48] mb-4 uppercase tracking-wide border-b border-[#f4e4bc] pb-2">
                         <span className="w-1 h-5 bg-red-500 mr-2 rounded-full"></span>
-                        第二部分：问题定位与修改建议
+                        问题定位与修改建议
                     </h3>
 
                     <div className="space-y-4">
-                        {/* Logic Flaw - Diagram */}
+                        {/* 结构问题 */}
                         <div className="bg-red-50 rounded-xl p-4 border border-red-100 relative overflow-hidden">
                             <div className="absolute top-0 right-0 bg-red-500 text-white text-xs px-2 py-1 rounded-bl-lg font-bold">严重</div>
                             <h4 className="text-sm font-bold text-red-800 mb-3 flex items-center">
@@ -232,11 +498,11 @@ const DiagnosticReportCard = () => {
                                 </div>
                             </div>
                             <p className="text-xs text-red-700 bg-red-100/50 p-2 rounded">
-                                <span className="font-bold">影响：</span> 读者易误认为排版错误而流失。<span className="font-bold">建议：</span> 删除开篇重复段落，或改写为不同视角。
+                                <span className="font-bold">影响：</span> 读者易误认为排版错误而流失。<span className="font-bold">建议：</span> 删除开篇重复段落。
                             </p>
                         </div>
 
-                        {/* Pacing & Hook - VS Comparison */}
+                        {/* 结尾钩子 */}
                         <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-100 relative">
                             <div className="absolute top-0 right-0 bg-yellow-500 text-white text-xs px-2 py-1 rounded-bl-lg font-bold">中等</div>
                             <h4 className="text-sm font-bold text-yellow-800 mb-3 flex items-center">
@@ -245,46 +511,20 @@ const DiagnosticReportCard = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-white/60 p-2 rounded">
                                     <div className="text-xs text-gray-500 font-bold mb-1">❌ 当前结尾</div>
-                                    <p className="text-xs text-gray-600">"下次来告诉你读后感" —— 缺乏悬念，无追读动力</p>
+                                    <p className="text-xs text-gray-600">"下次来告诉你读后感" —— 无追读动力</p>
                                 </div>
-                                <div className="bg-white p-2 rounded border border-yellow-200 shadow-sm relative">
-                                    <div className="absolute -top-2 -right-2 bg-yellow-400 text-white rounded-full p-0.5"><Star className="w-3 h-3"/></div>
+                                <div className="bg-white p-2 rounded border border-yellow-200 shadow-sm">
                                     <div className="text-xs text-yellow-700 font-bold mb-1">✅ 建议方向</div>
-                                    <p className="text-xs text-gray-800">增加悬念元素，如暗示男主身份、留下谜题等</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Character Design - Profile Cards */}
-                        <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                            <h4 className="text-sm font-bold text-blue-800 mb-3 flex items-center">
-                                👥 人物塑造分析
-                            </h4>
-                            <div className="space-y-2">
-                                <div className="flex items-center bg-white p-2 rounded shadow-sm">
-                                    <span className="text-lg mr-2">👩</span>
-                                    <div className="flex-1">
-                                        <div className="text-xs font-bold text-gray-800">女主 苏瑶：主动性不足</div>
-                                        <div className="text-[10px] text-gray-500">当前表现过于被动，缺乏内心戏和主观判断。</div>
-                                    </div>
-                                    <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">增加心理描写</span>
-                                </div>
-                                <div className="flex items-center bg-white p-2 rounded shadow-sm">
-                                    <span className="text-lg mr-2">👨</span>
-                                    <div className="flex-1">
-                                        <div className="text-xs font-bold text-gray-800">男主 周屿：神秘感缺乏支撑</div>
-                                        <div className="text-[10px] text-gray-500">行为怪异但缺乏细节铺垫，显得刻意。</div>
-                                    </div>
-                                    <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">增加具体怪癖</span>
+                                    <p className="text-xs text-gray-800">增加悬念，如暗示男主身份、留下谜题</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Section 3: Summary / Direction */}
-                <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-200 shadow-sm relative overflow-hidden">
-                    <div className="relative z-10 flex items-center justify-between">
+                {/* 总结 */}
+                <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-200 shadow-sm">
+                    <div className="flex items-center justify-between">
                         <div>
                             <h4 className="text-sm font-bold text-orange-900 mb-1">📌 总结</h4>
                             <p className="text-xs text-orange-700">本章基础扎实，主要问题在于开篇节奏和结尾钩子。修复重复段落、强化悬念后，留存率预计可提升30%以上。</p>
@@ -557,6 +797,12 @@ const NovelEditor: React.FC = () => {
         editor: 'focus-commercial',
         linkChapters: [],
         uploadedFiles: [],
+        bookSettings: {
+            tags: [],
+            channel: 'fanqie',
+            corePlot: '',
+            corePlotConfirmed: false,
+        }
     });
     
     const [revisionMaster, setRevisionMaster] = useState('author-tangjia');
@@ -577,7 +823,17 @@ const NovelEditor: React.FC = () => {
             setFinalRevision(null);
             setError('');
             setIsLoading(false);
-            setAuditConfig({ editor: 'focus-commercial', linkChapters: [], uploadedFiles: [] });
+            setAuditConfig({
+                editor: 'focus-commercial',
+                linkChapters: [],
+                uploadedFiles: [],
+                bookSettings: {
+                    tags: [],
+                    channel: 'fanqie',
+                    corePlot: '',
+                    corePlotConfirmed: false,
+                }
+            });
         }
     };
 
@@ -659,10 +915,37 @@ const NovelEditor: React.FC = () => {
                 return (
                      <div className='space-y-6 pb-10'>
                         {/* New Diagnostic Report Card */}
-                        <DiagnosticReportCard />
-                        
+                        <DiagnosticReportCard
+                            bookSettings={auditConfig.bookSettings}
+                            onUpdateCorePlot={(newPlot) => {
+                                setAuditConfig(prev => ({
+                                    ...prev,
+                                    bookSettings: {
+                                        ...prev.bookSettings,
+                                        corePlot: newPlot,
+                                        corePlotConfirmed: true
+                                    }
+                                }));
+                            }}
+                        />
+
                         {/* Visual Data: Reader Interest Curve */}
-                        <ReaderInterestCurve />
+                        <ReaderInterestCurve
+                            platformData={
+                                auditConfig.uploadedFiles.length > 0
+                                    ? {
+                                        hasData: true,
+                                        clickRate: 4.2,
+                                        retentionRate: 35,
+                                        readerFeedback: [
+                                            '男主好神秘，想知道他的身份',
+                                            '节奏有点慢，希望快点有进展',
+                                            '女主太被动了，希望主动一点'
+                                        ]
+                                    }
+                                    : undefined
+                            }
+                        />
 
                         {/* Revision Setup */}
                         <div className="border-t-2 border-gray-100 mt-8 pt-6">

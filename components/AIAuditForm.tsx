@@ -1,11 +1,13 @@
 
 import React, { useState } from 'react';
-import { UploadCloud, File, Trash, Link, ChevronRight, ChevronLeft, UserCheck, ChevronDown, Crown, X } from './Icons';
+import { UploadCloud, File, Trash, Link, ChevronRight, ChevronLeft, UserCheck, ChevronDown, Crown, X, Edit, CheckCircle } from './Icons';
+import { BookSettings } from '../types';
 
 export interface AuditConfig {
     editor: string;
     linkChapters: number[];
     uploadedFiles: File[];
+    bookSettings: BookSettings;
 }
 
 interface AIAuditFormProps {
@@ -13,6 +15,29 @@ interface AIAuditFormProps {
     setConfig: React.Dispatch<React.SetStateAction<AuditConfig>>;
     onSubmit: () => void;
 }
+
+// 预设标签选项
+const TAG_OPTIONS = [
+    { value: 'xuanhuan', label: '玄幻' },
+    { value: 'yanqing', label: '言情' },
+    { value: 'xuanyi', label: '悬疑' },
+    { value: 'dushi', label: '都市' },
+    { value: 'lishi', label: '历史' },
+    { value: 'kehuan', label: '科幻' },
+    { value: 'xiuxian', label: '修仙' },
+    { value: 'youxi', label: '游戏' },
+    { value: 'danmei', label: '耽美' },
+    { value: 'nvzun', label: '女尊' },
+];
+
+// 预设频道选项
+const CHANNEL_OPTIONS = [
+    { value: 'fanqie', label: '番茄小说', style: '快节奏、强冲突、黄金三章' },
+    { value: 'qidian', label: '起点中文网', style: '设定流、升级流、长线布局' },
+    { value: 'jinjiang', label: '晋江文学城', style: '情感细腻、CP感、文笔优美' },
+    { value: 'zhihu', label: '知乎盐选', style: '反转、脑洞、现实向' },
+    { value: 'qimao', label: '七猫小说', style: '甜宠、轻松、节奏明快' },
+];
 
 // Mocking the 6 chapters present in the sidebar
 const chapters = [
@@ -31,6 +56,8 @@ const AIAuditForm: React.FC<AIAuditFormProps> = ({ config, setConfig, onSubmit }
   const [chapterPage, setChapterPage] = useState(0);
   const [isVipModalOpen, setIsVipModalOpen] = useState(false);
   const [vipPreference, setVipPreference] = useState('fanqie');
+  const [isEditingCorePlot, setIsEditingCorePlot] = useState(false);
+  const [tempCorePlot, setTempCorePlot] = useState('');
 
   const totalPages = Math.ceil(chapters.length / ITEMS_PER_PAGE);
   const currentChapters = chapters.slice(chapterPage * ITEMS_PER_PAGE, (chapterPage + 1) * ITEMS_PER_PAGE);
@@ -67,6 +94,44 @@ const AIAuditForm: React.FC<AIAuditFormProps> = ({ config, setConfig, onSubmit }
       });
   };
 
+  const toggleTag = (tagValue: string) => {
+      setConfig(prev => {
+          const currentTags = prev.bookSettings.tags;
+          const exists = currentTags.includes(tagValue);
+          const newTags = exists
+              ? currentTags.filter(t => t !== tagValue)
+              : [...currentTags, tagValue];
+          return {
+              ...prev,
+              bookSettings: { ...prev.bookSettings, tags: newTags }
+          };
+      });
+  };
+
+  const setChannel = (channelValue: string) => {
+      setConfig(prev => ({
+          ...prev,
+          bookSettings: { ...prev.bookSettings, channel: channelValue }
+      }));
+  };
+
+  const confirmCorePlot = () => {
+      setConfig(prev => ({
+          ...prev,
+          bookSettings: {
+              ...prev.bookSettings,
+              corePlot: tempCorePlot || prev.bookSettings.corePlot,
+              corePlotConfirmed: true
+          }
+      }));
+      setIsEditingCorePlot(false);
+  };
+
+  const startEditCorePlot = () => {
+      setTempCorePlot(config.bookSettings.corePlot);
+      setIsEditingCorePlot(true);
+  };
+
   const getSelectedText = () => {
       if (config.linkChapters.length === 0) return '未关联 (仅诊断当前章节)';
       const count = config.linkChapters.length;
@@ -77,7 +142,7 @@ const AIAuditForm: React.FC<AIAuditFormProps> = ({ config, setConfig, onSubmit }
 
   const handleVipConnect = () => {
       setIsVipModalOpen(false);
-      alert('已为您提交VIP连线申请！专业编辑将在5分钟内联系您。');
+      alert('已为您提交VIP连线申请！专业编辑将在5分钟内联系您��');
   };
 
   return (
@@ -102,28 +167,156 @@ const AIAuditForm: React.FC<AIAuditFormProps> = ({ config, setConfig, onSubmit }
             </div>
         </div>
 
-        <div className='flex-1 space-y-6 overflow-y-auto pr-2 min-h-0'>
-            {/* Diagnosis Preview */}
+        <div className='flex-1 space-y-5 overflow-y-auto pr-2 min-h-0'>
+            {/* 诊断预览 */}
             <div className="bg-gray-50 border border-gray-100 rounded-lg p-3">
                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">本次诊断将包含：</h4>
                 <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                    <span className="flex items-center">✅ 核心爽点/毒点分析</span>
+                    <span className="flex items-center">✅ 全书定位分析</span>
+                    <span className="flex items-center">✅ 核心梗偏差检测</span>
                     <span className="flex items-center">✅ 读者心理曲线模拟</span>
-                    <span className="flex items-center">✅ 对标爆款书分析</span>
-                    <span className="flex items-center">✅ 剧情逻辑硬伤检测</span>
+                    <span className="flex items-center">✅ 平台数据联动诊断</span>
                 </div>
             </div>
-            
-            {/* AI Editor Selection - 改为改稿方向选择 */}
+
+            {/* 第一步：全书设定 - 核心新增 */}
+            <div className="space-y-3 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
+                <div className="flex items-center justify-between">
+                    <label className="text-base font-bold flex items-center space-x-2 text-blue-800">
+                        <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">1</span>
+                        <span>全书设定（重要）</span>
+                    </label>
+                    <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">先全书，后章节</span>
+                </div>
+                <p className="text-xs text-blue-700 -mt-1">明确全书定位后，AI才能准确判断本章是否偏离主线</p>
+
+                {/* 标签选择 */}
+                <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">作品标签（可多选）</label>
+                    <div className="flex flex-wrap gap-2">
+                        {TAG_OPTIONS.map(tag => {
+                            const isSelected = config.bookSettings.tags.includes(tag.value);
+                            return (
+                                <button
+                                    key={tag.value}
+                                    onClick={() => toggleTag(tag.value)}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                                        isSelected
+                                            ? 'bg-blue-500 text-white shadow-sm'
+                                            : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300'
+                                    }`}
+                                >
+                                    {tag.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* 频道选择 */}
+                <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">目标平台/频道</label>
+                    <div className="space-y-2">
+                        {CHANNEL_OPTIONS.map(channel => {
+                            const isSelected = config.bookSettings.channel === channel.value;
+                            return (
+                                <label
+                                    key={channel.value}
+                                    className={`flex items-center p-2.5 rounded-lg cursor-pointer transition-all ${
+                                        isSelected
+                                            ? 'bg-white border-2 border-blue-400 shadow-sm'
+                                            : 'bg-white/50 border border-gray-200 hover:border-blue-200'
+                                    }`}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="channel"
+                                        value={channel.value}
+                                        checked={isSelected}
+                                        onChange={() => setChannel(channel.value)}
+                                        className="mr-2 text-blue-500"
+                                    />
+                                    <div className="flex-1">
+                                        <span className="font-medium text-sm text-gray-800">{channel.label}</span>
+                                        <span className="text-xs text-gray-500 ml-2">({channel.style})</span>
+                                    </div>
+                                </label>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* 核心梗输入 - 关键功能 */}
+                <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
+                        <span>全书核心梗</span>
+                        {config.bookSettings.corePlotConfirmed && (
+                            <span className="text-xs text-green-600 flex items-center">
+                                <CheckCircle className="w-3 h-3 mr-1" /> 已确认
+                            </span>
+                        )}
+                    </label>
+                    {isEditingCorePlot ? (
+                        <div className="space-y-2">
+                            <textarea
+                                value={tempCorePlot}
+                                onChange={(e) => setTempCorePlot(e.target.value)}
+                                placeholder="请输入全书的核心卖点/梗，例如：重生复仇、甜宠日常、无限流升级..."
+                                className="w-full p-3 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 bg-white"
+                                rows={3}
+                            />
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={confirmCorePlot}
+                                    className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition"
+                                >
+                                    确认核心梗
+                                </button>
+                                <button
+                                    onClick={() => setIsEditingCorePlot(false)}
+                                    className="px-4 bg-gray-200 text-gray-600 py-2 rounded-lg text-sm hover:bg-gray-300 transition"
+                                >
+                                    取消
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div
+                            onClick={startEditCorePlot}
+                            className="p-3 bg-white border border-dashed border-blue-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition group"
+                        >
+                            {config.bookSettings.corePlot ? (
+                                <div className="flex items-start justify-between">
+                                    <p className="text-sm text-gray-700">{config.bookSettings.corePlot}</p>
+                                    <Edit className="w-4 h-4 text-blue-400 opacity-0 group-hover:opacity-100 transition flex-shrink-0 ml-2" />
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-400 flex items-center">
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    点击输入全书核心梗（AI将检测本章是否偏离）
+                                </p>
+                            )}
+                        </div>
+                    )}
+                    <p className="text-xs text-orange-600 mt-1.5 bg-orange-50 p-2 rounded">
+                        ⚠️ 重要：AI将根据此核心梗检测本章剧情是否偏离主线，请认真填写
+                    </p>
+                </div>
+            </div>
+
+            {/* 第二步：改稿方向选择 */}
             <div className="space-y-3">
-                <label htmlFor="editor-select" className="text-base font-bold flex items-center space-x-2"><UserCheck className="w-5 h-5 text-custom-primary"/><span>1. 选择改稿方向</span></label>
+                <label htmlFor="editor-select" className="text-base font-bold flex items-center space-x-2">
+                    <span className="bg-custom-primary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">2</span>
+                    <span>选择诊断方向</span>
+                </label>
                 <p className="text-xs text-gray-500 -mt-2 mb-2">根据您的需求，选择最适合的诊断侧重点</p>
 
                 <select
                     id="editor-select"
                     value={config.editor}
                     onChange={(e) => setConfig(prev => ({...prev, editor: e.target.value}))}
-                    className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-custom-primary focus:border-custom-primary transition text-sm mb-3"
+                    className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-custom-primary focus:border-custom-primary transition text-sm"
                 >
                     <option value="focus-commercial">商业化优化【侧重：黄金三章 / 留存率提升 / 付费卡点】</option>
                     <option value="focus-plot">剧情结构【侧重：节奏把控 / 冲突设计 / 悬念铺设】</option>
@@ -131,18 +324,16 @@ const AIAuditForm: React.FC<AIAuditFormProps> = ({ config, setConfig, onSubmit }
                     <option value="focus-emotion">情感深度【侧重：人物弧光 / 情感细腻度 / CP感营造】</option>
                 </select>
 
-                {/* Advanced / VIP Option - MOVED BELOW SELECT */}
+                {/* VIP进阶版 */}
                 <div className="rounded-xl p-0.5 bg-gradient-to-r from-purple-300 via-pink-300 to-red-300 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setIsVipModalOpen(true)}>
-                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-[10px] p-4 flex justify-between items-center">
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-[10px] p-3 flex justify-between items-center">
                         <div>
                             <h3 className="text-sm font-bold text-purple-900 flex items-center">
-                                <Crown className="w-4 h-4 mr-1 text-yellow-500" /> 
+                                <Crown className="w-4 h-4 mr-1 text-yellow-500" />
                                 【VIP 进阶版】
                             </h3>
-                            <p className="text-xs text-purple-700 mt-1">
-                                AI审稿差点意思？想拥有专属小编？
-                                <br/>
-                                这里直接帮你在线对接专业编辑，人工帮你审稿！
+                            <p className="text-xs text-purple-700 mt-0.5">
+                                想要专属人工编辑审稿？点击连线专业编辑
                             </p>
                         </div>
                         <button className="bg-white text-purple-700 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm hover:bg-purple-100 transition border border-purple-100">
@@ -152,20 +343,22 @@ const AIAuditForm: React.FC<AIAuditFormProps> = ({ config, setConfig, onSubmit }
                 </div>
             </div>
 
-             {/* Link Chapters - Dropdown with Pagination & Multi-select */}
+            {/* 第三步：关联章节 */}
             <div className="space-y-3">
-                <label className="text-base font-bold flex items-center space-x-2"><Link className="w-5 h-5 text-custom-primary"/><span>2. 关联章节</span></label>
-                 
-                 {/* Official Hint Style - LIGHTER/SUBTLE */}
+                <label className="text-base font-bold flex items-center space-x-2">
+                    <span className="bg-custom-primary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">3</span>
+                    <span>关联章节</span>
+                </label>
+
                 <div className="bg-slate-50 border-l-4 border-slate-400 p-2 rounded-r-md">
                      <p className="text-xs text-slate-700 font-medium leading-relaxed">
-                         <span className="font-bold mr-1">💡 官方提示：</span>
-                         默认<span className="font-bold text-slate-900">仅诊断当前章节</span>。如需更准确的上下文逻辑诊断（如伏笔回收），请勾选关联章节可提升40%准确率。
+                         <span className="font-bold mr-1">💡 提示：</span>
+                         默认<span className="font-bold text-slate-900">仅诊断当前章节</span>。勾选关联章节可提升40%准确率。
                      </p>
                 </div>
-                
+
                 <div className="relative">
-                    <button 
+                    <button
                         onClick={() => setIsChapterDropdownOpen(!isChapterDropdownOpen)}
                         className="w-full text-left p-3 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition text-gray-700 flex justify-between items-center text-sm"
                     >
@@ -176,16 +369,16 @@ const AIAuditForm: React.FC<AIAuditFormProps> = ({ config, setConfig, onSubmit }
                     {isChapterDropdownOpen && (
                         <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
                             <div className="flex items-center justify-between mb-2 px-1">
-                                <button 
-                                    onClick={handlePrevPage} 
+                                <button
+                                    onClick={handlePrevPage}
                                     disabled={chapterPage === 0}
                                     className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-gray-600"
                                 >
                                     <ChevronLeft className="w-5 h-5" />
                                 </button>
                                 <span className="text-xs text-gray-400">第 {chapterPage + 1} / {totalPages} 页</span>
-                                <button 
-                                    onClick={handleNextPage} 
+                                <button
+                                    onClick={handleNextPage}
                                     disabled={chapterPage === totalPages - 1}
                                     className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-gray-600"
                                 >
@@ -204,7 +397,7 @@ const AIAuditForm: React.FC<AIAuditFormProps> = ({ config, setConfig, onSubmit }
                                             }}
                                             className={`text-left px-3 py-2 text-xs rounded-md border transition-colors ${
                                                 isSelected
-                                                ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold' 
+                                                ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold'
                                                 : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                                             }`}
                                         >
@@ -221,18 +414,38 @@ const AIAuditForm: React.FC<AIAuditFormProps> = ({ config, setConfig, onSubmit }
                 </div>
             </div>
 
-            {/* Data Feedback */}
+            {/* 第四步：上传平台数据 */}
             <div className="space-y-3">
-                <label className="text-base font-bold flex items-center space-x-2"><UploadCloud className="w-5 h-5 text-custom-primary"/><span>3. 上传平台数据 (可选)</span></label>
-                <p className="text-xs text-gray-500">上传后台数据截图，AI将结合真实留存率进行精准建议</p>
-                <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 text-sm text-gray-500 hover:bg-gray-50 hover:border-custom-primary hover:text-custom-primary transition-colors">
-                    <UploadCloud className="w-8 h-8 mb-2" />
-                    <span>点击或拖拽文件到此处上传</span>
+                <label className="text-base font-bold flex items-center space-x-2">
+                    <span className="bg-custom-primary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">4</span>
+                    <span>上传平台数据 (可选)</span>
+                </label>
+                <p className="text-xs text-gray-500">上传后台数据截图或评论区截图，AI将进行精细化分析</p>
+
+                {/* 数据类型说明 */}
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="bg-green-50 p-2 rounded text-center">
+                        <span className="block text-green-600 font-bold">📊 点击率</span>
+                        <span className="text-gray-500">分析标题吸引力</span>
+                    </div>
+                    <div className="bg-blue-50 p-2 rounded text-center">
+                        <span className="block text-blue-600 font-bold">📈 留存率</span>
+                        <span className="text-gray-500">定位跳出章节</span>
+                    </div>
+                    <div className="bg-purple-50 p-2 rounded text-center">
+                        <span className="block text-purple-600 font-bold">💬 评论区</span>
+                        <span className="text-gray-500">提取读者期待</span>
+                    </div>
+                </div>
+
+                <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 text-sm text-gray-500 hover:bg-gray-50 hover:border-custom-primary hover:text-custom-primary transition-colors">
+                    <UploadCloud className="w-6 h-6 mb-1" />
+                    <span>点击或拖拽文件上传</span>
                 </label>
                 <input id="file-upload" name="file-upload" type="file" className="sr-only" multiple accept="image/*" onChange={handleFileChange} />
                 {config.uploadedFiles.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                        <ul className="max-h-28 overflow-y-auto bg-gray-50 p-2 rounded-md border">
+                    <div className="space-y-2">
+                        <ul className="max-h-24 overflow-y-auto bg-gray-50 p-2 rounded-md border">
                             {config.uploadedFiles.map((file, index) => (
                                 <li key={index} className="flex items-center justify-between bg-white p-2 rounded text-sm group even:bg-gray-50">
                                     <div className='flex items-center space-x-2 overflow-hidden'>
